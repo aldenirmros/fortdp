@@ -1144,6 +1144,10 @@ function handleLogout() {
   document.getElementById('loginEmail').value = '';
   document.getElementById('loginSenha').value = '';
   allRecords = []; filteredRecords = [];
+  // Reseta estado visual para o próximo login
+  document.getElementById('adminNavSection').classList.add('hidden');
+  document.getElementById('statsGrid').classList.add('hidden');
+  document.getElementById('painelSubtitle').textContent = 'Acompanhe e gerencie os registros de faltas.';
 }
 
 // ── TABS ──────────────────────────────────────────
@@ -1170,6 +1174,9 @@ function switchTab(tab) {
     if (session.perfil === 'Admin') {
       document.getElementById('statsGrid').classList.remove('hidden');
       document.getElementById('painelSubtitle').textContent = 'Visão geral do Departamento Pessoal — todos os registros.';
+    } else {
+      document.getElementById('statsGrid').classList.add('hidden');
+      document.getElementById('painelSubtitle').textContent = 'Acompanhe e gerencie os seus registros de faltas.';
     }
     loadTableData();
   }
