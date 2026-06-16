@@ -492,6 +492,45 @@
         <label class="field-label">Motivo / Justificativa</label>
         <textarea id="editMotivo" class="field-input" placeholder="Descreva o motivo da falta..."></textarea>
       </div>
+      <div class="field-group" style="margin-bottom:0;">
+        <label class="field-label">Documento / Atestado</label>
+
+        <!-- Documento existente (exibido quando há docUrl) -->
+        <div id="editDocExistente" class="hidden" style="margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--accent-light);border:1.5px solid #C7D7FA;border-radius:10px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <a id="editDocLink" href="#" target="_blank" rel="noopener noreferrer" style="font-size:13px;font-weight:500;color:var(--accent);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Ver documento atual</a>
+            <button type="button" onclick="editRemoveDoc()" title="Remover documento" style="background:none;border:none;cursor:pointer;color:var(--danger);display:flex;align-items:center;padding:2px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-muted);margin-top:5px;padding-left:2px;">Clique no ✕ para remover o documento atual, ou selecione um novo abaixo para substituí-lo.</div>
+        </div>
+
+        <!-- Dropzone (sempre visível se não há arquivo novo selecionado) -->
+        <div class="dropzone" id="editDropzone">
+          <input type="file" id="editFileInput" accept=".pdf,.jpg,.jpeg,.png,.webp" style="display:none;" />
+          <div class="dropzone-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" color="var(--text-secondary)">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <div class="dropzone-text"><strong>Arraste o arquivo aqui</strong> ou clique para selecionar</div>
+          <div class="dropzone-hint">PDF, JPG, PNG ou WEBP — máx. 5 MB</div>
+        </div>
+
+        <!-- Preview do novo arquivo selecionado -->
+        <div id="editFilePreview" class="hidden">
+          <div class="file-preview">
+            <svg class="file-preview-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span class="file-preview-name" id="editPreviewName">—</span>
+            <span class="file-preview-size" id="editPreviewSize">—</span>
+            <button class="btn btn-icon btn-sm" onclick="editClearFile()" title="Remover arquivo" style="width:28px;height:28px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('editModal')">Cancelar</button>
@@ -1600,18 +1639,108 @@ function updateStats() {
 }
 
 // ── EDIT ──────────────────────────────────────────
+// ── EDIT — estado do arquivo ──────────────────────
+let editFileB64       = null;   // Base64 limpo do novo arquivo
+let editFileMime      = null;
+let editFileName      = null;
+let editRemoveDocFlag = false;  // true quando usuário pediu para remover o doc atual
+
 function openEditModal(record) {
   document.getElementById('editId').value         = record.id;
   document.getElementById('editNome').value       = record.nomeFuncionario || '';
   document.getElementById('editHub').value        = record.hub || '';
   document.getElementById('editSupervisor').value = record.supervisor || '';
-  // FIX: dataFalta já chega como string YYYY-MM-DD do back-end corrigido
   document.getElementById('editData').value       = record.dataFalta || '';
   document.getElementById('editMotivo').value     = record.motivo || '';
   document.getElementById('editStatus').value     = record.status || 'Pendente';
   document.getElementById('editStatus').disabled  = session.perfil !== 'Admin';
+
+  // Reset estado do arquivo
+  editFileB64       = null;
+  editFileMime      = null;
+  editFileName      = null;
+  editRemoveDocFlag = false;
+  document.getElementById('editFileInput').value = '';
+  document.getElementById('editFilePreview').classList.add('hidden');
+  document.getElementById('editDropzone').style.display = '';
+
+  // Exibe o documento existente, se houver
+  const docUrl = record.docUrl || '';
+  const docDiv = document.getElementById('editDocExistente');
+  const docLink = document.getElementById('editDocLink');
+  if (docUrl) {
+    docLink.href        = docUrl;
+    docLink.textContent = record.docFileName || 'Ver documento atual';
+    docDiv.classList.remove('hidden');
+  } else {
+    docDiv.classList.add('hidden');
+  }
+
   openModal('editModal');
 }
+
+// Remove o documento existente (sinaliza para o back-end)
+function editRemoveDoc() {
+  editRemoveDocFlag = true;
+  document.getElementById('editDocExistente').classList.add('hidden');
+  showToast('Documento será removido ao salvar.', 'warning');
+}
+
+// Processa novo arquivo selecionado no modal de edição
+function editHandleFileSelect(file) {
+  if (!file) return;
+  const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+  if (!allowed.includes(file.type)) {
+    showToast('Formato inválido. Use PDF, JPG, PNG ou WEBP.', 'warning'); return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('Arquivo muito grande. Máximo: 5 MB.', 'warning'); return;
+  }
+
+  editFileMime = file.type;
+  editFileName = file.name;
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const raw   = ev.target.result;
+    const comma = raw.indexOf(',');
+    editFileB64 = comma !== -1 ? raw.substring(comma + 1) : raw;
+
+    document.getElementById('editPreviewName').textContent = file.name;
+    document.getElementById('editPreviewSize').textContent = formatBytes(file.size);
+    document.getElementById('editFilePreview').classList.remove('hidden');
+    document.getElementById('editDropzone').style.display = 'none';
+    // Novo arquivo substitui o existente — oculta o painel do doc antigo
+    document.getElementById('editDocExistente').classList.add('hidden');
+    editRemoveDocFlag = false; // substituição, não remoção simples
+  };
+  reader.readAsDataURL(file);
+}
+
+function editClearFile() {
+  editFileB64  = null;
+  editFileMime = null;
+  editFileName = null;
+  document.getElementById('editFileInput').value = '';
+  document.getElementById('editFilePreview').classList.add('hidden');
+  document.getElementById('editDropzone').style.display = '';
+}
+
+// Wiring do dropzone de edição (executado uma vez no carregamento)
+(function setupEditDropzone() {
+  const edz = document.getElementById('editDropzone');
+  const efi = document.getElementById('editFileInput');
+  edz.addEventListener('click', () => efi.click());
+  edz.addEventListener('dragover',  e => { e.preventDefault(); edz.classList.add('dragover'); });
+  edz.addEventListener('dragleave', ()  => edz.classList.remove('dragover'));
+  edz.addEventListener('drop', e => {
+    e.preventDefault(); edz.classList.remove('dragover');
+    if (e.dataTransfer.files.length) editHandleFileSelect(e.dataTransfer.files[0]);
+  });
+  efi.addEventListener('change', () => {
+    if (efi.files.length) editHandleFileSelect(efi.files[0]);
+  });
+})();
 
 async function submitEdit() {
   const id         = document.getElementById('editId').value;
@@ -1634,7 +1763,15 @@ async function submitEdit() {
       method: 'POST',
       body: JSON.stringify({
         action: 'update', token: session.token, email: session.email,
-        data: { id, nomeFuncionario: nome, hub, supervisor, dataFalta: data, motivo, status }
+        data: {
+          id, nomeFuncionario: nome, hub, supervisor, dataFalta: data, motivo, status,
+          // Arquivo novo (substitui ou adiciona)
+          fileBase64: editFileB64  || null,
+          fileName:   editFileName || null,
+          fileMime:   editFileMime || null,
+          // Sinaliza remoção sem substituição
+          removeDoc:  editRemoveDocFlag && !editFileB64,
+        }
       })
     });
     const result = await res.json();
