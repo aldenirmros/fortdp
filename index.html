@@ -746,15 +746,21 @@
     <!-- ABA: PAINEL DE FALTAS -->
     <div id="tabPainel" class="tab-panel">
       <div class="page-header">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
           <div>
             <h2 class="page-title">Painel de Faltas</h2>
             <p class="page-subtitle" id="painelSubtitle">Acompanhe e gerencie os registros de faltas.</p>
           </div>
-          <button class="btn btn-secondary btn-sm" onclick="loadTableData()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
-            Atualizar
-          </button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="loadTableData()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+              Atualizar
+            </button>
+            <button class="btn btn-accent btn-sm" onclick="exportarCSV()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Exportar CSV
+            </button>
+          </div>
         </div>
       </div>
       <div class="page-body">
@@ -774,6 +780,80 @@
             <div class="stat-label">Validados</div>
             <div class="stat-value" style="color:var(--success)" id="statValidado">—</div>
             <div class="stat-change">Aprovados pelo DP</div>
+          </div>
+        </div>
+
+        <!-- ── BARRA DE FILTROS ── -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow-sm);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <span style="font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              Filtros
+            </span>
+            <button class="btn btn-ghost btn-sm" onclick="limparFiltros()" style="font-size:12px;padding:4px 10px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              Limpar filtros
+            </button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-items:end;">
+            <!-- Mês -->
+            <div>
+              <label style="display:block;font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:5px;">Mês</label>
+              <select id="filtroMes" class="field-input" style="padding:8px 12px;font-size:13px;" onchange="filterTable()">
+                <option value="">Todos os meses</option>
+                <option value="1">Janeiro</option>
+                <option value="2">Fevereiro</option>
+                <option value="3">Março</option>
+                <option value="4">Abril</option>
+                <option value="5">Maio</option>
+                <option value="6">Junho</option>
+                <option value="7">Julho</option>
+                <option value="8">Agosto</option>
+                <option value="9">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+              </select>
+            </div>
+            <!-- Ano -->
+            <div>
+              <label style="display:block;font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:5px;">Ano</label>
+              <select id="filtroAno" class="field-input" style="padding:8px 12px;font-size:13px;" onchange="filterTable()">
+                <option value="">Todos os anos</option>
+              </select>
+            </div>
+            <!-- Data início -->
+            <div>
+              <label style="display:block;font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:5px;">Data início</label>
+              <input type="date" id="filtroDataInicio" class="field-input" style="padding:8px 12px;font-size:13px;" onchange="filterTable()" />
+            </div>
+            <!-- Data fim -->
+            <div>
+              <label style="display:block;font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:5px;">Data fim</label>
+              <input type="date" id="filtroDataFim" class="field-input" style="padding:8px 12px;font-size:13px;" onchange="filterTable()" />
+            </div>
+            <!-- Hub -->
+            <div>
+              <label style="display:block;font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:5px;">Hub</label>
+              <select id="filtroHub" class="field-input" style="padding:8px 12px;font-size:13px;" onchange="filterTable()">
+                <option value="">Todos os hubs</option>
+              </select>
+            </div>
+            <!-- Status -->
+            <div>
+              <label style="display:block;font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:5px;">Status</label>
+              <select id="filtroStatus" class="field-input" style="padding:8px 12px;font-size:13px;" onchange="filterTable()">
+                <option value="">Todos</option>
+                <option value="Pendente">Pendente</option>
+                <option value="Validado">Validado</option>
+                <option value="Recusado">Recusado</option>
+              </select>
+            </div>
+          </div>
+          <!-- Indicador de filtros ativos -->
+          <div id="filtrosAtivosBar" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:12px;color:var(--text-muted);">Filtros ativos:</span>
+            <div id="filtrosAtivosChips" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
           </div>
         </div>
 
@@ -1526,7 +1606,8 @@ async function loadTableData() {
       allRecords      = result.records || [];
       filteredRecords = [...allRecords];
       currentPage     = 1;
-      renderTable();
+      _popularFiltrosSelect();   // atualiza selects de Ano e Hub com os dados reais
+      filterTable();             // aplica filtros ativos antes de renderizar
       updateStats();
     } else {
       tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:48px;color:var(--danger);">${result.message || 'Erro ao carregar dados.'}</td></tr>`;
@@ -1536,16 +1617,198 @@ async function loadTableData() {
   }
 }
 
+// ── FILTROS ──────────────────────────────────────
+function _popularFiltrosSelect() {
+  // Anos presentes nos dados
+  const anos = [...new Set(allRecords
+    .map(r => r.dataFalta ? r.dataFalta.substring(0, 4) : null)
+    .filter(Boolean)
+  )].sort((a, b) => b - a);
+
+  const selAno = document.getElementById('filtroAno');
+  const anoAtual = selAno.value;
+  selAno.innerHTML = '<option value="">Todos os anos</option>' +
+    anos.map(a => `<option value="${a}" ${a === anoAtual ? 'selected' : ''}>${a}</option>`).join('');
+
+  // Hubs presentes nos dados
+  const hubs = [...new Set(allRecords
+    .map(r => (r.hub || '').trim())
+    .filter(Boolean)
+  )].sort();
+
+  const selHub = document.getElementById('filtroHub');
+  const hubAtual = selHub.value;
+  selHub.innerHTML = '<option value="">Todos os hubs</option>' +
+    hubs.map(h => `<option value="${h}" ${h === hubAtual ? 'selected' : ''}>${h}</option>`).join('');
+}
+
 function filterTable() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
-  filteredRecords = allRecords.filter(r =>
-    (r.nomeFuncionario || '').toLowerCase().includes(q) ||
-    (r.hub             || '').toLowerCase().includes(q) ||
-    (r.supervisor      || '').toLowerCase().includes(q) ||
-    (r.motivo          || '').toLowerCase().includes(q)
-  );
+  const q           = document.getElementById('searchInput').value.toLowerCase();
+  const mes         = document.getElementById('filtroMes').value;
+  const ano         = document.getElementById('filtroAno').value;
+  const dataInicio  = document.getElementById('filtroDataInicio').value;   // YYYY-MM-DD
+  const dataFim     = document.getElementById('filtroDataFim').value;      // YYYY-MM-DD
+  const hub         = document.getElementById('filtroHub').value;
+  const status      = document.getElementById('filtroStatus').value;
+
+  filteredRecords = allRecords.filter(r => {
+    // Texto livre
+    if (q && !(
+      (r.nomeFuncionario || '').toLowerCase().includes(q) ||
+      (r.hub             || '').toLowerCase().includes(q) ||
+      (r.supervisor      || '').toLowerCase().includes(q) ||
+      (r.motivo          || '').toLowerCase().includes(q)
+    )) return false;
+
+    // Mês da data da falta
+    if (mes && r.dataFalta) {
+      const mFalta = parseInt(r.dataFalta.substring(5, 7), 10);
+      if (mFalta !== parseInt(mes, 10)) return false;
+    }
+
+    // Ano da data da falta
+    if (ano && r.dataFalta) {
+      if (r.dataFalta.substring(0, 4) !== ano) return false;
+    }
+
+    // Intervalo de dias (dataInicio → dataFim)
+    if (dataInicio && r.dataFalta && r.dataFalta < dataInicio) return false;
+    if (dataFim    && r.dataFalta && r.dataFalta > dataFim)    return false;
+
+    // Hub exato
+    if (hub && (r.hub || '').trim() !== hub) return false;
+
+    // Status
+    if (status && r.status !== status) return false;
+
+    return true;
+  });
+
   currentPage = 1;
+  _atualizarChipsFiltros({ mes, ano, dataInicio, dataFim, hub, status });
   renderTable();
+}
+
+const MESES_NOMES = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+function _atualizarChipsFiltros({ mes, ano, dataInicio, dataFim, hub, status }) {
+  const chips = [];
+  if (mes)        chips.push({ label: MESES_NOMES[parseInt(mes, 10)], clear: () => { document.getElementById('filtroMes').value = ''; filterTable(); } });
+  if (ano)        chips.push({ label: ano,                             clear: () => { document.getElementById('filtroAno').value = ''; filterTable(); } });
+  if (dataInicio) chips.push({ label: 'De ' + formatDate(dataInicio),  clear: () => { document.getElementById('filtroDataInicio').value = ''; filterTable(); } });
+  if (dataFim)    chips.push({ label: 'Até ' + formatDate(dataFim),    clear: () => { document.getElementById('filtroDataFim').value = ''; filterTable(); } });
+  if (hub)        chips.push({ label: hub,                             clear: () => { document.getElementById('filtroHub').value = ''; filterTable(); } });
+  if (status)     chips.push({ label: status,                          clear: () => { document.getElementById('filtroStatus').value = ''; filterTable(); } });
+
+  const bar   = document.getElementById('filtrosAtivosBar');
+  const cont  = document.getElementById('filtrosAtivosChips');
+
+  if (chips.length === 0) {
+    bar.style.display = 'none';
+    cont.innerHTML = '';
+    return;
+  }
+
+  bar.style.display = 'flex';
+  cont.innerHTML = chips.map((c, i) => `
+    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;background:var(--accent-light);color:var(--accent);border-radius:100px;font-size:12px;font-weight:500;cursor:pointer;" onclick="_clearChip(${i})">
+      ${c.label}
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </span>`).join('');
+
+  // Guarda as funções de limpeza globalmente para o onclick inline funcionar
+  window._chipClearFns = chips.map(c => c.clear);
+}
+
+function _clearChip(i) {
+  if (window._chipClearFns && window._chipClearFns[i]) window._chipClearFns[i]();
+}
+
+function limparFiltros() {
+  document.getElementById('filtroMes').value        = '';
+  document.getElementById('filtroAno').value        = '';
+  document.getElementById('filtroDataInicio').value = '';
+  document.getElementById('filtroDataFim').value    = '';
+  document.getElementById('filtroHub').value        = '';
+  document.getElementById('filtroStatus').value     = '';
+  document.getElementById('searchInput').value      = '';
+  filterTable();
+}
+
+// ── EXPORTAR CSV ──────────────────────────────────
+function exportarCSV() {
+  if (filteredRecords.length === 0) {
+    showToast('Nenhum registro para exportar com os filtros atuais.', 'warning');
+    return;
+  }
+
+  const mes        = document.getElementById('filtroMes').value;
+  const ano        = document.getElementById('filtroAno').value;
+  const dataInicio = document.getElementById('filtroDataInicio').value;
+  const dataFim    = document.getElementById('filtroDataFim').value;
+  const hub        = document.getElementById('filtroHub').value;
+  const status     = document.getElementById('filtroStatus').value;
+
+  // Monta nome do arquivo descritivo
+  let sufixo = '';
+  if (mes && ano)       sufixo = `_${MESES_NOMES[parseInt(mes,10)]}_${ano}`;
+  else if (mes)         sufixo = `_${MESES_NOMES[parseInt(mes,10)]}`;
+  else if (ano)         sufixo = `_${ano}`;
+  if (dataInicio && dataFim) sufixo += `_${dataInicio}_a_${dataFim}`;
+  else if (dataInicio)  sufixo += `_a_partir_${dataInicio}`;
+  else if (dataFim)     sufixo += `_ate_${dataFim}`;
+  if (hub)              sufixo += `_${hub.replace(/\s+/g, '_')}`;
+  if (status)           sufixo += `_${status}`;
+  const nomeArquivo = `Faltas${sufixo || '_completo'}_${new Date().toISOString().slice(0,10)}.csv`;
+
+  // Cabeçalho
+  const cabecalho = [
+    'ID', 'Data Cadastro', 'Login Supervisor', 'Nome Supervisor',
+    'Funcionário', 'Data Falta', 'Hub', 'Supervisor Resp.',
+    'Motivo', 'Status', 'URL Documento'
+  ];
+
+  // Linhas — agrupadas por Hub (ordenação primária) e data (secundária)
+  const ordenados = [...filteredRecords].sort((a, b) => {
+    const hubCmp = (a.hub || '').localeCompare(b.hub || '', 'pt-BR');
+    if (hubCmp !== 0) return hubCmp;
+    return (a.dataFalta || '') < (b.dataFalta || '') ? -1 : 1;
+  });
+
+  const esc = v => {
+    const s = (v || '').toString().replace(/"/g, '""');
+    return /[",\n]/.test(s) ? `"${s}"` : s;
+  };
+
+  const linhas = ordenados.map(r => [
+    esc(r.id),
+    esc(formatDateTime(r.dataCadastro)),
+    esc(r.emailSupervisor),
+    esc(r.nomeSupervisor),
+    esc(r.nomeFuncionario),
+    esc(formatDate(r.dataFalta)),
+    esc(r.hub),
+    esc(r.supervisor),
+    esc(r.motivo),
+    esc(r.status),
+    esc(r.docUrl),
+  ].join(','));
+
+  // BOM UTF-8 para Excel abrir corretamente com acentos
+  const bom  = '\uFEFF';
+  const csv  = bom + [cabecalho.map(esc).join(','), ...linhas].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = nomeArquivo;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast(`${filteredRecords.length} registro(s) exportado(s) → ${nomeArquivo}`, 'success', 5000);
 }
 
 function renderTable() {
