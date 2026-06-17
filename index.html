@@ -723,10 +723,20 @@
             </div>
           </div>
           <div style="display:flex;justify-content:flex-end;margin-top:8px;">
-            <button class="btn btn-accent" onclick="submitForm()" id="submitFormBtn" style="min-width:160px;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 12 19.79 19.79 0 0 1 1.87 3.37 2 2 0 0 1 3.85 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-              <span id="submitFormText">Enviar Registro</span>
-              <span id="submitFormSpinner" class="spinner hidden"></span>
+            <button class="btn btn-accent" onclick="submitForm()" id="submitFormBtn" style="min-width:160px;position:relative;">
+              <!-- Ícone + texto: visíveis no estado normal -->
+              <span id="submitFormIdle" style="display:inline-flex;align-items:center;gap:8px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+                Enviar Registro
+              </span>
+              <!-- Estado de loading: substitui o conteúdo sem alterar dimensões -->
+              <span id="submitFormLoading" style="display:none;align-items:center;gap:8px;">
+                <span class="spinner" style="width:15px;height:15px;border-width:2px;flex-shrink:0;"></span>
+                Enviando...
+              </span>
             </button>
           </div>
         </div>
@@ -956,7 +966,7 @@
 // ╔══════════════════════════════════════════════════╗
 // ║  ⚠️  SUBSTITUA PELA URL DO SEU APPS SCRIPT ⚠️   ║
 // ╚══════════════════════════════════════════════════╝
-const API_URL = 'https://script.google.com/macros/s/AKfycbyaIrOAMlYzDsdeoPz3HakA-HC2zbb0JAZ4tK4oyzhjph7T9o9xTgfQ-jMrNqJiuqCnBw/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbz6_1W4oSOQym0mrA0T9CqLYfcPewZmWz7ZBNO_mj9Jlji4er83nNGO6Pev4zY2JJy_dQ/exec';
 
 // ── ESTADO DA APLICAÇÃO ──────────────────────────
 let session          = null;   // { email, nome, perfil, token }
@@ -1454,8 +1464,8 @@ async function submitForm() {
 
   const btn = document.getElementById('submitFormBtn');
   btn.disabled = true;
-  document.getElementById('submitFormText').textContent = 'Enviando...';
-  document.getElementById('submitFormSpinner').classList.remove('hidden');
+  document.getElementById('submitFormIdle').style.display   = 'none';
+  document.getElementById('submitFormLoading').style.display = 'inline-flex';
 
   try {
     const payload = {
@@ -1498,8 +1508,8 @@ async function submitForm() {
     showToast('Erro de conexão. Tente novamente.', 'error');
   } finally {
     btn.disabled = false;
-    document.getElementById('submitFormText').textContent = 'Enviar Registro';
-    document.getElementById('submitFormSpinner').classList.add('hidden');
+    document.getElementById('submitFormIdle').style.display   = 'inline-flex';
+    document.getElementById('submitFormLoading').style.display = 'none';
   }
 }
 
@@ -1651,6 +1661,7 @@ let editFileB64       = null;   // Base64 limpo do novo arquivo
 let editFileMime      = null;
 let editFileName      = null;
 let editRemoveDocFlag = false;  // true quando usuário pediu para remover o doc atual
+let editClientUpdatedAt = null; // versão do registro quando foi aberto (optimistic lock)
 
 function openEditModal(record) {
   document.getElementById('editId').value         = record.id;
@@ -1661,6 +1672,9 @@ function openEditModal(record) {
   document.getElementById('editMotivo').value     = record.motivo || '';
   document.getElementById('editStatus').value     = record.status || 'Pendente';
   document.getElementById('editStatus').disabled  = session.perfil !== 'Admin';
+
+  // Guarda a versão atual para detecção de conflito
+  editClientUpdatedAt = record.updatedAt || record.dataCadastro || null;
 
   // Reset estado do arquivo
   editFileB64       = null;
@@ -1778,6 +1792,8 @@ async function submitEdit() {
           fileMime:   editFileMime || null,
           // Sinaliza remoção sem substituição
           removeDoc:  editRemoveDocFlag && !editFileB64,
+          // Versão que o cliente tinha ao abrir (optimistic lock)
+          clientUpdatedAt: editClientUpdatedAt || null,
         }
       })
     });
@@ -1786,6 +1802,11 @@ async function submitEdit() {
       showToast('Registro atualizado com sucesso!', 'success');
       closeModal('editModal');
       loadTableData();
+    } else if (result.conflict) {
+      // Conflito de edição simultânea — aviso especial com opção de recarregar
+      closeModal('editModal');
+      showToast('⚠️ ' + result.message, 'warning', 8000);
+      loadTableData(); // recarrega a tabela com os dados mais recentes
     } else {
       showToast(result.message || 'Erro ao atualizar.', 'error');
     }
